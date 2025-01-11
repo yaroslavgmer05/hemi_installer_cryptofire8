@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# Цвета текста для удобства восприятия
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # Сброс цвета
+
+# Проверка наличия curl
+if ! command -v curl &> /dev/null; then
+    sudo apt update
+    sudo apt install curl -y
+fi
+sleep 1
+
+# Вывод приветственного сообщения
+clear
+echo -e "${CYAN}Добро пожаловать в установщик ноды Hemi от Crypto Fire!${NC}"
+
+# Меню выбора
+echo -e "${YELLOW}Выберите действие:${NC}"
+echo -e "${CYAN}1) Установка ноды Hemi${NC}"
+echo -e "${CYAN}2) Обновление ноды Hemi${NC}"
+echo -e "${CYAN}3) Изменение комиссии${NC}"
+echo -e "${CYAN}4) Удаление ноды Hemi${NC}"
+echo -e "${CYAN}5) Проверка логов (CTRL+C для выхода)${NC}"
+read -p "Введите номер действия: " choice
+
+case $choice in
+    1)
+        echo -e "${BLUE}Начинается установка ноды Hemi...${NC}"
+
+        sudo apt update && sudo apt upgrade -y
+        sudo apt install tar -y
+
+        # Загрузка и установка бинарников
+        curl -L -O https://github.com/hemilabs/heminetwork/releases/download/v0.10.0/heminetwork_v0.10.0_linux_amd64.tar.gz
+        mkdir -p ~/hemi && tar --strip-components=1 -xzvf heminetwork_v0.10.0_linux_amd64.tar.gz -C ~/hemi
+
+        # Генерация нового ключа
+        ~/hemi/keygen -secp256k1 -json -net="testnet" > ~/popm-address.json
+        echo -e "${RED}Сохраните эти данные в надежное место!${NC}"
+        cat ~/popm-address.json
+
+        # Ввод приватного ключа и комиссии
+        read -p "Введите приватный ключ: " PRIV_KEY
+        read -p "Введите размер комиссии (не менее 50): " FEE
+
+        # Сохранение настроек
+        echo "POPM_BTC_PRIVKEY=$PRIV_KEY" > ~/hemi/popmd.env
+        echo "POPM_STATIC_FEE=$FEE" >> ~/hemi/popmd.env
+        echo "POPM_BFG_URL=wss://testnet.rpc.hemi.network/v1/ws/public" >> ~/hemi/popmd.env
+
+        # Создание systemd-сервиса
+        cat <<EOT | sudo tee /etc/systemd/system/hemi.service > /dev/null
+[Unit]
+Description=Hemi Node Service
+After=network.target
+
+[Service]
+User=$USER
+EnvironmentFile=$HOME/hemi/popmd.env
+ExecStart=$HOME/hemi/popmd
+WorkingDirectory=$HOME/hemi
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOT
+
+        # Запуск сервиса
+        sudo systemctl daemon-reload
+        sudo systemctl enable hemi
+        sudo systemctl start hemi
+
+        echo -e "${GREEN}Нода Hemi успешно установлена и запущена!${NC}"
+        echo -e "${YELLOW}Просмотр логов: sudo journalctl -u hemi -f${NC}"
+        echo -e "${CYAN}Подписывайтесь на канал Crypto Fire: https://t.me/cryptofire${NC}"
+        ;;
+
+    2)
+        echo -e "${BLUE}Обновление ноды Hemi...${NC}"
+        sudo systemctl stop hemi
+        sudo rm -rf ~/hemi
+        curl -L -O https://github.com/hemilabs/heminetwork/releases/download/v0.10.0/heminetwork_v0.10.0_linux_amd64.tar.gz
+        mkdir -p ~/hemi && tar --strip-components=1 -xzvf heminetwork_v0.10.0_linux_amd64.tar.gz -C ~/hemi
+        sudo systemctl start hemi
+        echo -e "${GREEN}Нода Hemi успешно обновлена!${NC}"
+        ;;
+
+    3)
+        read -p "Введите новую комиссию (не менее 50): " NEW_FEE
+        sed -i "s/^POPM_STATIC_FEE=.*/POPM_STATIC_FEE=$NEW_FEE/" ~/hemi/popmd.env
+        sudo systemctl restart hemi
+        echo -e "${GREEN}Комиссия обновлена!${NC}"
+        ;;
+
+    4)
+        echo -e "${RED}Удаление ноды Hemi...${NC}"
+        sudo systemctl stop hemi
+        sudo systemctl disable hemi
+        sudo rm /etc/systemd/system/hemi.service
+        sudo rm -rf ~/hemi
+        sudo systemctl daemon-reload
+        echo -e "${GREEN}Нода Hemi полностью удалена!${NC}"
+        ;;
+
+    5)
+        sudo journalctl -u hemi -f
+        ;;
+
+    *)
+        echo -e "${RED}Некорректный ввод, пожалуйста, попробуйте снова.${NC}"
+        ;;
+esac
