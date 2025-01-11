@@ -18,7 +18,7 @@ sleep 1
 
 # Вывод приветственного сообщения
 clear
-echo -e "${CYAN}Добро пожаловать в установщик ноды Hemi от Crypto Fire!${NC}"
+echo -e "${CYAN}Добро пожаловать в установщик ноды Hemi от Crypto Fire, обязательно поддержи автора и подпишись на канал t.me/cryptofire8!${NC}"
 
 # Меню выбора
 echo -e "${YELLOW}Выберите действие:${NC}"
@@ -78,7 +78,7 @@ EOT
 
         echo -e "${GREEN}Нода Hemi успешно установлена и запущена!${NC}"
         echo -e "${YELLOW}Просмотр логов: sudo journalctl -u hemi -f${NC}"
-        echo -e "${CYAN}Подписывайтесь на канал Crypto Fire: https://t.me/cryptofire${NC}"
+        echo -e "${CYAN}Подписывайтесь на канал Crypto Fire: https://t.me/cryptofire8${NC}"
         ;;
 
     2)
