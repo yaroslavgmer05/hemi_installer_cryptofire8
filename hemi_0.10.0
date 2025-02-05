@@ -37,8 +37,10 @@ case $choice in
         sudo apt install tar -y
 
         # Загрузка и установка бинарников
-        curl -L -O https://github.com/hemilabs/heminetwork/releases/download/v0.10.0/heminetwork_v0.10.0_linux_amd64.tar.gz
-        mkdir -p ~/hemi && tar --strip-components=1 -xzvf heminetwork_v0.10.0_linux_amd64.tar.gz -C ~/hemi
+        curl -L -O https://github.com/hemilabs/heminetwork/releases/download/v0.10.0/heminetwork_v0.11.2_linux_amd64.tar.gz
+
+        mkdir -p ~/hemi && tar --strip-components=1 -xzvf heminetwork_v0.11.2_linux_amd64.tar.gz
+ -C ~/hemi
 
         # Генерация нового ключа
         ~/hemi/keygen -secp256k1 -json -net="testnet" > ~/popm-address.json
